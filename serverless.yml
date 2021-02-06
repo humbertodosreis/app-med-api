@@ -144,6 +144,17 @@ resources:
                     - 's3:GetBucketLocation'
                   Resource:
                     - '*'
+                - Sid: CloudformationPolicy
+                  Effect: Allow
+                  Action:
+                    - cloudformation:CreateStack
+                    - cloudformation:CreateChangeSet
+                    - cloudformation:ListStacks
+                    - cloudformation:UpdateStack
+                    - cloudformation:DescribeChangeSet
+                    - cloudformation:ExecuteChangeSet
+                  Resource:
+                    - '*'
     CodeBuildSourceCredential:
       Type: 'AWS::CodeBuild::SourceCredential'
       Properties:
