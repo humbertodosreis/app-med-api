@@ -1,9 +1,4 @@
 "use strict";
-const pacientes = [
-  { id: 1, nome: "Maria", dataNascimento: "1984-11-01" },
-  { id: 2, nome: "Joao", dataNascimento: "1980-01-16" },
-  { id: 3, nome: "Jose", dataNascimento: "1998-06-06" },
-];
 
 const AWS = require("aws-sdk");
 const { v4: uuidv4 } = require("uuid");
@@ -15,16 +10,16 @@ const dynamodbOfflineOptions = {
 
 const isOffline = () => process.env.IS_OFFLINE;
 
-const dynamoDb = isOffline() 
-  ? new AWS.DynamoDB.DocumentClient(dynamodbOfflineOptions) 
+const dynamoDb = isOffline()
+  ? new AWS.DynamoDB.DocumentClient(dynamodbOfflineOptions)
   : new AWS.DynamoDB.DocumentClient();
-  
+
 const params = {
   TableName: process.env.PACIENTES_TABLE,
 };
 
 module.exports.listarPacientes = async (event) => {
-    // MySQL
+  // MySQL
   // SELECT * FROM table LIMIT 10 OFFSET 21
   // DynamoDB
   // Limit = LIMIT, ExclusiveStartKey = OFFSET e LastEvaluatedKey = "Numero da Pagina"
@@ -34,34 +29,38 @@ module.exports.listarPacientes = async (event) => {
       limit: 5,
       ...event.queryStringParameters
     }
-    
+
     const { limit, next } = queryString
-    
+
     let localParams = {
       ...params,
       Limit: limit
     }
-    
+
     if (next) {
       localParams.ExclusiveStartKey = {
         paciente_id: next
       }
     }
-    
+
     let data = await dynamoDb.scan(localParams).promise();
-    
+
     let nextToken = data.LastEvaluatedKey != undefined
-      ? data.LastEvaluatedKey.paciente_id 
+      ? data.LastEvaluatedKey.paciente_id
       : null;
-    
+
     const result = {
       items: data.Items,
       next_token: nextToken
     }
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify(result),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   } catch (err) {
     console.log("Error", err);
@@ -71,6 +70,10 @@ module.exports.listarPacientes = async (event) => {
         error: err.name ? err.name : "Exception",
         message: err.message ? err.message : "Unknown error",
       }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   }
 };
@@ -100,6 +103,10 @@ module.exports.obterPaciente = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify(paciente, null, 2),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   } catch (err) {
     console.log("Error", err);
@@ -109,6 +116,10 @@ module.exports.obterPaciente = async (event) => {
         error: err.name ? err.name : "Exception",
         message: err.message ? err.message : "Unknown error",
       }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   }
 };
@@ -134,13 +145,17 @@ module.exports.cadastrarPaciente = async (event) => {
 
     await dynamoDb
       .put({
-        TableName: "PACIENTES",
+        ...params,
         Item: paciente,
       })
       .promise();
 
     return {
       statusCode: 201,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   } catch (err) {
     console.log("Error", err);
@@ -150,11 +165,15 @@ module.exports.cadastrarPaciente = async (event) => {
         error: err.name ? err.name : "Exception",
         message: err.message ? err.message : "Unknown error",
       }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   }
 };
 
-module.exports.atualizarPaciente = async (event) => {  
+module.exports.atualizarPaciente = async (event) => {
   const { pacienteId } = event.pathParameters
 
   try {
@@ -171,7 +190,7 @@ module.exports.atualizarPaciente = async (event) => {
           paciente_id: pacienteId
         },
         UpdateExpression:
-          'SET nome = :nome, data_nascimento = :dt, email = :email,' 
+          'SET nome = :nome, data_nascimento = :dt, email = :email,'
           + ' telefone = :telefone, atualizado_em = :atualizado_em',
         ConditionExpression: 'attribute_exists(paciente_id)',
         ExpressionAttributeValues: {
@@ -186,6 +205,10 @@ module.exports.atualizarPaciente = async (event) => {
 
     return {
       statusCode: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   } catch (err) {
     console.log("Error", err);
@@ -206,6 +229,10 @@ module.exports.atualizarPaciente = async (event) => {
         error,
         message
       }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   }
 };
@@ -223,9 +250,13 @@ module.exports.excluirPaciente = async event => {
         ConditionExpression: 'attribute_exists(paciente_id)'
       })
       .promise()
- 
+
     return {
-      statusCode: 204
+      statusCode: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     }
   } catch (err) {
     console.log("Error", err);
@@ -246,6 +277,10 @@ module.exports.excluirPaciente = async event => {
         error,
         message
       }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      }
     };
   }
 }
