@@ -18,6 +18,17 @@ const params = {
   TableName: process.env.PACIENTES_TABLE,
 };
 
+function handlerResponse(statusCode, body) {
+  return {
+    statusCode,
+    body,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Credentials": true,
+    }
+  }
+}
+
 module.exports.listarPacientes = async (event) => {
   // MySQL
   // SELECT * FROM table LIMIT 10 OFFSET 21
@@ -54,27 +65,18 @@ module.exports.listarPacientes = async (event) => {
       next_token: nextToken
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+    return handlerResponse(200, JSON.stringify(result))
+
   } catch (err) {
     console.log("Error", err);
-    return {
-      statusCode: err.statusCode ? err.statusCode : 500,
-      body: JSON.stringify({
+
+    return handlerResponse(
+      err.statusCode ? err.statusCode : 500,
+      JSON.stringify({
         error: err.name ? err.name : "Exception",
         message: err.message ? err.message : "Unknown error",
-      }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+      })
+    )
   }
 };
 

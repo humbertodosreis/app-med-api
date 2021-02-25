@@ -51,7 +51,7 @@ provider:
 
 functions:
   autenticador:
-    handler: src/auth.handler
+    handler: src/authorizer.handler
   listarPacientes:
     handler: src/handler.listarPacientes
     events:
