@@ -1,6 +1,7 @@
 service: alura-med-api
 
 plugins:
+  - serverless-domain-manager
   - serverless-dynamodb-local
   - serverless-offline
 
@@ -23,7 +24,12 @@ custom:
             sources: [./offline/migrations/pacientes-seed.json]
   serverless-offline:
     httpPort: 3001
-          
+  customDomain:
+    domainName: api.aluramed.xyz
+    basePath: 'v1'
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+    certificateName: aluramed.xyz        
 
 provider:
   name: aws
