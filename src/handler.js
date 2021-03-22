@@ -19,22 +19,16 @@ const params = {
 };
 
 function handlerResponse(statusCode, body) {
-  return {
-    statusCode,
-    body,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Credentials": true,
-    }
+  let response = { statusCode }
+
+  if (body) {
+    response['body'] = body
   }
+
+  return response
 }
 
 module.exports.listarPacientes = async (event) => {
-  // MySQL
-  // SELECT * FROM table LIMIT 10 OFFSET 21
-  // DynamoDB
-  // Limit = LIMIT, ExclusiveStartKey = OFFSET e LastEvaluatedKey = "Numero da Pagina"
-
   try {
     const queryString = {
       limit: 5,
@@ -94,35 +88,22 @@ module.exports.obterPaciente = async (event) => {
       .promise();
 
     if (!data.Item) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Paciente não existe" }, null, 2),
-      };
+      return handlerResponse(404, JSON.stringify({ error: "Paciente não existe" }, null, 2))
     }
 
     const paciente = data.Item;
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(paciente, null, 2),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+    return handlerResponse(200, JSON.stringify(paciente, null, 2))
   } catch (err) {
     console.log("Error", err);
-    return {
-      statusCode: err.statusCode ? err.statusCode : 500,
-      body: JSON.stringify({
+
+    return handlerResponse(
+      err.statusCode ? err.statusCode : 500,
+      JSON.stringify({
         error: err.name ? err.name : "Exception",
         message: err.message ? err.message : "Unknown error",
-      }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+      })
+    )
   }
 };
 
@@ -152,26 +133,17 @@ module.exports.cadastrarPaciente = async (event) => {
       })
       .promise();
 
-    return {
-      statusCode: 201,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+    return handlerResponse(201, null)
   } catch (err) {
     console.log("Error", err);
-    return {
-      statusCode: err.statusCode ? err.statusCode : 500,
-      body: JSON.stringify({
+
+    return handlerResponse(
+      err.statusCode ? err.statusCode : 500,
+      JSON.stringify({
         error: err.name ? err.name : "Exception",
         message: err.message ? err.message : "Unknown error",
-      }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+      })
+    )
   }
 };
 
@@ -205,13 +177,7 @@ module.exports.atualizarPaciente = async (event) => {
       })
       .promise()
 
-    return {
-      statusCode: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+    return handlerResponse(204, null)
   } catch (err) {
     console.log("Error", err);
 
@@ -225,17 +191,10 @@ module.exports.atualizarPaciente = async (event) => {
       statusCode = 404;
     }
 
-    return {
+    return handlerResponse(
       statusCode,
-      body: JSON.stringify({
-        error,
-        message
-      }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+      JSON.stringify({ error, message })
+    )
   }
 };
 
@@ -253,13 +212,7 @@ module.exports.excluirPaciente = async event => {
       })
       .promise()
 
-    return {
-      statusCode: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    }
+    return handlerResponse(204, null)
   } catch (err) {
     console.log("Error", err);
 
@@ -273,16 +226,9 @@ module.exports.excluirPaciente = async event => {
       statusCode = 404;
     }
 
-    return {
+    return handlerResponse(
       statusCode,
-      body: JSON.stringify({
-        error,
-        message
-      }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-      }
-    };
+      JSON.stringify({ error, message })
+    )
   }
 }

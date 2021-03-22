@@ -1,7 +1,6 @@
 service: alura-med-api
 
 plugins:
-  - serverless-domain-manager
   - serverless-dynamodb-local
   - serverless-offline
 
@@ -23,13 +22,7 @@ custom:
           - table: ${self:provider.environment.PACIENTES_TABLE}
             sources: [./offline/migrations/pacientes-seed.json]
   serverless-offline:
-    httpPort: 3001
-  customDomain:
-    domainName: api.aluramed.xyz
-    basePath: 'v1'
-    stage: ${self:provider.stage}
-    createRoute53Record: true
-    certificateName: aluramed.xyz        
+    httpPort: 3001     
 
 provider:
   name: aws
@@ -44,16 +37,18 @@ provider:
   environment:
    PACIENTES_TABLE: 'PACIENTES_${opt:stage, self:provider.stage}'
 
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:PutItem
-        - dynamodb:DeleteItem
-        - dynamodb:GetItem
-        - dynamodb:UpdateItem
-      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.PACIENTES_TABLE}'
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:PutItem
+            - dynamodb:DeleteItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+          Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.PACIENTES_TABLE}'
 
 functions:
   autenticador:
@@ -64,8 +59,6 @@ functions:
       - http:
           path: pacientes
           method: get
-          authorizer: autenticador
-          cors: true
 
   obterPaciente:
     handler: src/handler.obterPaciente
@@ -73,8 +66,6 @@ functions:
       - http:
           path: pacientes/{pacienteId}
           method: get
-          authorizer: aws_iam
-          cors: true
 
   cadastrarPaciente:
     handler: src/handler.cadastrarPaciente
@@ -82,8 +73,6 @@ functions:
       - http:
           path: pacientes
           method: post
-          authorizer: aws_iam
-          cors: true
 
   atualizarPaciente:
     handler: src/handler.atualizarPaciente
@@ -91,8 +80,6 @@ functions:
       - http:
           path: pacientes/{pacienteId}
           method: put
-          authorizer: aws_iam
-          cors: true
           
   excluirPaciente:
     handler: src/handler.excluirPaciente
@@ -100,8 +87,6 @@ functions:
       - http:
           path: pacientes/{pacienteId}
           method: delete
-          authorizer: aws_iam
-          cors: true
 
 resources:
   Resources:
@@ -118,176 +103,3 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-    
-    UserPool:
-      Type: AWS::Cognito::UserPool
-      Properties:
-        UsernameConfiguration: 
-          CaseSensitive: false
-        AutoVerifiedAttributes:
-          - email
-        UsernameAttributes:
-          - email
-        UserPoolName: alura-med-user-pool-${opt:stage, self:provider.stage}
-        Schema:
-          - Name: email
-            AttributeDataType: String
-            Mutable: false
-            Required: true
-          - Name: name
-            AttributeDataType: String
-            Mutable: true
-            Required: true
-
-    UserPoolClient:
-      Type: AWS::Cognito::UserPoolClient
-      Properties:
-        UserPoolId: !Ref UserPool
-        AllowedOAuthFlowsUserPoolClient: true
-        CallbackURLs:
-          - http://localhost:3001
-        AllowedOAuthFlows:
-          - code
-          - implicit
-        AllowedOAuthScopes:
-          - phone
-          - email
-          - openid
-          - profile
-        SupportedIdentityProviders:
-          - COGNITO
-
-    UserPoolDomain:
-      Type: AWS::Cognito::UserPoolDomain
-      Properties:
-        Domain: alura-med-${opt:stage, self:provider.stage}
-        UserPoolId: !Ref UserPool
-      
-    # Creates a federeated Identity pool
-    IdentityPool:
-      Type: "AWS::Cognito::IdentityPool"
-      Properties:
-        IdentityPoolName: alura-med-identity-pool-${opt:stage, self:provider.stage}
-        AllowUnauthenticatedIdentities: true
-        CognitoIdentityProviders: 
-          - ClientId: !Ref UserPoolClient
-            ProviderName: !GetAtt UserPool.ProviderName
-
-    # Create a role for unauthorized acces to AWS resources. 
-    # Very limited access. Only allows users in the previously created Identity Pool
-    CognitoUnAuthorizedRole:
-      Type: "AWS::IAM::Role"
-      Properties:
-        AssumeRolePolicyDocument: 
-          Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Principal: 
-                Federated: "cognito-identity.amazonaws.com"
-              Action: 
-                - "sts:AssumeRoleWithWebIdentity"
-              Condition:
-                StringEquals: 
-                  "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
-                "ForAnyValue:StringLike":
-                  "cognito-identity.amazonaws.com:amr": unauthenticated
-        Policies:
-          - PolicyName: "CognitoUnauthorizedPolicy"
-            PolicyDocument: 
-              Version: "2012-10-17"
-              Statement: 
-                - Effect: "Allow"
-                  Action:
-                    - "mobileanalytics:PutEvents"
-                    - "cognito-sync:*"
-                  Resource: "*"
-    # Create a role for authorized acces to AWS resources. 
-    # Control what your user can access. This example only allows Lambda invokation
-    # Only allows users in the previously created Identity Pool
-    CognitoAuthorizedRole:
-      Type: "AWS::IAM::Role"
-      Properties:
-        AssumeRolePolicyDocument: 
-          Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Principal: 
-                Federated: "cognito-identity.amazonaws.com"
-              Action: 
-                - "sts:AssumeRoleWithWebIdentity"
-              Condition:
-                StringEquals: 
-                  "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
-                "ForAnyValue:StringLike":
-                  "cognito-identity.amazonaws.com:amr": authenticated
-        Policies:
-          - PolicyName: "CognitoAuthorizedPolicy"
-            PolicyDocument: 
-              Version: "2012-10-17"
-              Statement: 
-                - Effect: "Allow"
-                  Action:
-                    - "mobileanalytics:PutEvents"
-                    - "cognito-sync:*"
-                    - "cognito-identity:*"
-                  Resource: "*"
-                - Effect: "Allow"
-                  Action:
-                    - "execute-api:Invoke"
-                  #Resource: "arn:aws:execute-api:${opt:region, self:provider.region}:*:${ApiGatewayRestApi}/*/*/*"
-                  #Resource: !Ref ApiGatewayRestApi
-                  #Resource: "*"
-                  Resource:
-                    Fn::Join:
-                      - ""
-                      - - "arn:aws:execute-api:${opt:region, self:provider.region}:*:"
-                        - Ref: ApiGatewayRestApi
-                        - "/*/*/*"
-  
-    # Assigns the roles to the Identity Pool
-    IdentityPoolRoleMapping:
-      Type: "AWS::Cognito::IdentityPoolRoleAttachment"
-      Properties:
-        IdentityPoolId: !Ref IdentityPool
-        Roles:
-          authenticated: !GetAtt CognitoAuthorizedRole.Arn
-          unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn
-
-    # API Gateway Errors
-    GatewayResponseDefault4XX:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-            gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-            gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
-        ResponseType: DEFAULT_4XX
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-    GatewayResponseDefault5XX:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-            gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-            gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
-        ResponseType: DEFAULT_5XX
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-  Outputs:
-    CognitoUserPoolID:
-      Value: !Ref UserPool
-      Description: The UserPool ID
-    CognitoAppClientID:
-      Value: !Ref UserPoolClient
-      Description: The app client    
-    CognitoIdentityPoolID:
-      Value: !Ref IdentityPool
-      Description: The identity pool ID
-    HostedUIURL:
-      Value: !Sub https://alura-med.auth.${opt:region, self:provider.region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&scope=email+openid+phone+profile&redirect_uri=http://localhost:3001
-      Description: The hosted UI URL
-    ExportedApiGatewayRestApi:
-      Description: First service's API Gateway REST API resource ID
-      Value:
-        Ref: ApiGatewayRestApi # Logical ID
-      Export:
-        Name: ExportedApiGatewayRestApi
