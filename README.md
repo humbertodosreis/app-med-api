@@ -2,6 +2,8 @@
 
 Backend da aplicação para cadastro de pacientes.
 
+![Diagrama](aws_diagram.png)
+
 ## Instalação
 
 Instalação das dependências.
