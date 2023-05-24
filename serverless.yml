@@ -1,4 +1,4 @@
-service: alura-med-api
+service: app-med-api
 
 plugins:
   - serverless-domain-manager
@@ -25,11 +25,11 @@ custom:
   serverless-offline:
     httpPort: 3001
   customDomain:
-    domainName: api.aluramed.xyz
+    domainName: api.appmed.xyz
     basePath: 'v1'
     stage: ${self:provider.stage}
     createRoute53Record: true
-    certificateName: aluramed.xyz        
+    certificateName: appmed.xyz        
 
 provider:
   name: aws
@@ -128,7 +128,7 @@ resources:
           - email
         UsernameAttributes:
           - email
-        UserPoolName: alura-med-user-pool-${opt:stage, self:provider.stage}
+        UserPoolName: app-med-user-pool-${opt:stage, self:provider.stage}
         Schema:
           - Name: email
             AttributeDataType: String
@@ -160,14 +160,14 @@ resources:
     UserPoolDomain:
       Type: AWS::Cognito::UserPoolDomain
       Properties:
-        Domain: alura-med-${opt:stage, self:provider.stage}
+        Domain: app-med-${opt:stage, self:provider.stage}
         UserPoolId: !Ref UserPool
       
     # Creates a federeated Identity pool
     IdentityPool:
       Type: "AWS::Cognito::IdentityPool"
       Properties:
-        IdentityPoolName: alura-med-identity-pool-${opt:stage, self:provider.stage}
+        IdentityPoolName: app-med-identity-pool-${opt:stage, self:provider.stage}
         AllowUnauthenticatedIdentities: true
         CognitoIdentityProviders: 
           - ClientId: !Ref UserPoolClient
@@ -283,7 +283,7 @@ resources:
       Value: !Ref IdentityPool
       Description: The identity pool ID
     HostedUIURL:
-      Value: !Sub https://alura-med.auth.${opt:region, self:provider.region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&scope=email+openid+phone+profile&redirect_uri=http://localhost:3001
+      Value: !Sub https://app-med.auth.${opt:region, self:provider.region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&scope=email+openid+phone+profile&redirect_uri=http://localhost:3001
       Description: The hosted UI URL
     ExportedApiGatewayRestApi:
       Description: First service's API Gateway REST API resource ID
