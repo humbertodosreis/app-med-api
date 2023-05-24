@@ -69,7 +69,7 @@ Resources:
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: GITHUB
-        Location: 'https://github.com/humbertodosreis/alura-med-api.git'
+        Location: 'https://github.com/humbertodosreis/app-med-api.git'
         BuildSpec: buildspec.yml
         Auth:
           Type: OAUTH
